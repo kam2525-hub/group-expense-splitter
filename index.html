@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>割り勘・立て替え一発精算ルート計算機</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --secondary: #06b6d4;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --border-color: #e2e8f0;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --success: #10b981;
+            --radius: 12px;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --transition: all 0.25s ease;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 16px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            color: var(--primary);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        header p {
+            color: var(--text-sub);
+            font-size: 0.95rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: var(--text-main);
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--text-sub);
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            color: var(--text-main);
+            background: #fff;
+            transition: var(--transition);
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        @media (max-width: 600px) {
+            .row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: var(--transition);
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            width: 100%;
+            padding: 12px;
+            font-size: 1.05rem;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background-color: #e0e7ff;
+            color: var(--primary);
+        }
+
+        .btn-secondary:hover {
+            background-color: #c7d2fe;
+        }
+
+        .btn-danger-subtle {
+            background-color: #fee2e2;
+            color: var(--danger);
+            padding: 6px 10px;
+            font-size: 0.85rem;
+        }
+
+        .btn-danger-subtle:hover {
+            background-color: #fecaca;
+        }
+
+        .tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .tag {
+            background: #f1f5f9;
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tag .remove {
+            cursor: pointer;
+            color: var(--text-sub);
+            font-weight: bold;
+        }
+
+        .tag .remove:hover {
+            color: var(--danger);
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 12px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+            text-align: left;
+        }
+
+        th, td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: #f8fafc;
+            font-weight: 600;
+            color: var(--text-sub);
+            font-size: 0.85rem;
+        }
+
+        .result-box {
+            background: linear-gradient(135deg, #e0e7ff 0%, #ccfbf1 100%);
+            border: 1px solid #c7d2fe;
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .transfer-item {
+            background: white;
+            padding: 14px 16px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            font-weight: 500;
+        }
+
+        .transfer-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .transfer-route {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .payer {
+            color: var(--danger);
+            font-weight: 700;
+        }
+
+        .receiver {
+            color: var(--success);
+            font-weight: 700;
+        }
+
+        .amount {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .arrow {
+            color: var(--text-sub);
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-sub);
+            padding: 20px 0;
+            font-size: 0.95rem;
+        }
+
+        .actions-bar {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .actions-bar .btn {
+            flex: 1;
+        }
+
+        .currency {
+            font-size: 0.85rem;
+            color: var(--text-sub);
+            font-weight: normal;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            一発精算ルート計算機
+        </h1>
+        <p>バラバラの立て替え費用から、最も送金回数が少なくなる最適ルートを算出します</p>
+    </header>
+
+    <!-- 1. メンバー登録 -->
+    <section class="card">
+        <div class="card-title">1. メンバーの登録</div>
+        <div class="row">
+            <div class="form-group" style="margin-bottom:0;">
+                <input type="text" id="memberNameInput" placeholder="例: 田中、佐藤 など">
+            </div>
+            <button class="btn btn-secondary" onclick="addMember()">メンバーを追加</button>
+        </div>
+        <div id="memberTagList" class="tag-list"></div>
+    </section>
+
+    <!-- 2. 立て替え費用入力 -->
+    <section class="card">
+        <div class="card-title">2. 立て払い費用の入力</div>
+        <div class="form-group">
+            <label for="expenseTitle">内容・目的</label>
+            <input type="text" id="expenseTitle" placeholder="例: 1日目 居酒屋、タクシー代 など">
+        </div>
+        <div class="row">
+            <div class="form-group">
+                <label for="expensePayer">立て替えた人</label>
+                <select id="expensePayer"></select>
+            </div>
+            <div class="form-group">
+                <label for="expenseAmount">金額 <span class="currency">(円)</span></label>
+                <input type="number" id="expenseAmount" placeholder="例: 5000" min="0">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>対象メンバー（割り勘する人）</label>
+            <div style="display: flex; gap: 10px; margin-bottom: 8px;">
+                <button type="button" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;" onclick="toggleAllTargets(true)">全員選択</button>
+                <button type="button" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;" onclick="toggleAllTargets(false)">全解除</button>
+            </div>
+            <div id="targetCheckboxes" class="tag-list"></div>
+        </div>
+        <button class="btn btn-primary" onclick="addExpense()">立て替え費用をリストに追加</button>
+
+        <div class="table-container">
+            <table id="expenseTable">
+                <thead>
+                    <tr>
+                        <th>内容</th>
+                        <th>支払者</th>
+                        <th>金額</th>
+                        <th>対象者</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="expenseTableBody">
+                    <tr><td colspan="5" class="empty-state">まだ費用が登録されていません</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- 3. 精算結果 -->
+    <section class="card" style="border: 2px solid var(--primary);">
+        <div class="card-title">
+            3. 最適精算ルート
+            <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem;" onclick="calculateRoute()">計算を実行</button>
+        </div>
+        <div id="resultContainer">
+            <div class="empty-state">メンバーと費用を入力して「計算を実行」を押してください</div>
+        </div>
+        
+        <div class="actions-bar">
+            <button class="btn btn-danger-subtle" onclick="resetAllData()">データをすべてリセット</button>
+        </div>
+    </section>
+</div>
+
+<script>
+    // 状態管理
+    let state = {
+        members: [],
+        expenses: []
+    };
+
+    // LocalStorage キー
+    const STORAGE_KEY = 'split_bill_calculator_data_v1';
+
+    // 初期化
+    window.addEventListener('DOMContentLoaded', () => {
+        loadFromStorage();
+        renderAll();
+    });
+
+    function saveToStorage() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function loadFromStorage() {
+        const data = localStorage.getItem(STORAGE_KEY);
+        if (data) {
+            try {
+                state = JSON.parse(data);
+            } catch (e) {
+                console.error("データの読み込みに失敗しました", e);
+            }
+        }
+    }
+
+    function resetAllData() {
+        if (confirm("入力されたメンバーや費用をすべて削除しますか？")) {
+            state = { members: [], expenses: [] };
+            saveToStorage();
+            renderAll();
+            document.getElementById('resultContainer').innerHTML = '<div class="empty-state">メンバーと費用を入力して「計算を実行」を押してください</div>';
+        }
+    }
+
+    // メンバー追加
+    function addMember() {
+        const input = document.getElementById('memberNameInput');
+        const name = input.value.trim();
+        if (!name) return;
+        if (state.members.includes(name)) {
+            alert('同じ名前のメンバーが既に存在します。');
+            return;
+        }
+        state.members.push(name);
+        input.value = '';
+        saveToStorage();
+        renderAll();
+    }
+
+    // メンバー削除
+    function removeMember(name) {
+        state.members = state.members.filter(m => m !== name);
+        // 関連する費用も削除、または対象から外すなどの処理が必要であれば行うが、シンプルに保持するか確認
+        state.expenses = state.expenses.filter(exp => exp.payer !== name);
+        saveToStorage();
+        renderAll();
+    }
+
+    // 費用追加
+    function addExpense() {
+        const titleInput = document.getElementById('expenseTitle');
+        const payerSelect = document.getElementById('expensePayer');
+        const amountInput = document.getElementById('expenseAmount');
+        
+        const title = titleInput.value.trim() || '立て替え費用';
+        const payer = payerSelect.value;
+        const amount = parseFloat(amountInput.value);
+
+        if (!payer) {
+            alert('立て替えた人を選択してください。');
+            return;
+        }
+        if (isNaN(amount) || amount <= 0) {
+            alert('有効な金額を入力してください。');
+            return;
+        }
+
+        // チェックされた対象者を取得
+        const checkboxes = document.querySelectorAll('input[name="targetMember"]:checked');
+        const targets = Array.from(checkboxes).map(cb => cb.value);
+
+        if (targets.length === 0) {
+            alert('割り勘の対象メンバーを1人以上選択してください。');
+            return;
+        }
+
+        state.expenses.push({
+            id: Date.now().toString(),
+            title,
+            payer,
+            amount,
+            targets
+        });
+
+        titleInput.value = '';
+        amountInput.value = '';
+        saveToStorage();
+        renderAll();
+        calculateRoute(); // 自動再計算
+    }
+
+    function removeExpense(id) {
+        state.expenses = state.expenses.filter(exp => exp.id !== id);
+        saveToStorage();
+        renderAll();
+        calculateRoute();
+    }
+
+    function toggleAllTargets(check) {
+        const checkboxes = document.querySelectorAll('input[name="targetMember"]');
+        checkboxes.forEach(cb => cb.checked = check);
+    }
+
+    // 描画関連
+    function renderAll() {
+        renderMembers();
+        renderPayerSelect();
+        renderTargetCheckboxes();
+        renderExpenseTable();
+    }
+
+    function renderMembers() {
+        const container = document.getElementById('memberTagList');
+        if (state.members.length === 0) {
+            container.innerHTML = '<span class="empty-state" style="padding:0;">メンバーが登録されていません</span>';
+            return;
+        }
+        container.innerHTML = state.members.map(m => `
+            <div class="tag">
+                ${escapeHTML(m)}
+                <span class="remove" onclick="removeMember('${escapeHTML(m)}')">&times;</span>
+            </div>
+        `).join('');
+    }
+
+    function renderPayerSelect() {
+        const select = document.getElementById('expensePayer');
+        if (state.members.length === 0) {
+            select.innerHTML = '<option value="">先にメンバーを追加してください</option>';
+            return;
+        }
+        select.innerHTML = '<option value="">選択してください</option>' + 
+            state.members.map(m => `<option value="${escapeHTML(m)}">${escapeHTML(m)}</option>`).join('');
+    }
+
+    function renderTargetCheckboxes() {
+        const container = document.getElementById('targetCheckboxes');
+        if (state.members.length === 0) {
+            container.innerHTML = '<span class="empty-state" style="padding:0;">メンバーが登録されていません</span>';
+            return;
+        }
+        container.innerHTML = state.members.map(m => `
+            <label class="tag" style="cursor:pointer; background:#fff;">
+                <input type="checkbox" name="targetMember" value="${escapeHTML(m)}" checked style="accent-color: var(--primary);">
+                ${escapeHTML(m)}
+            </label>
+        `).join('');
+    }
+
+    function renderExpenseTable() {
+        const tbody = document.getElementById('expenseTableBody');
+        if (state.expenses.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="empty-state">まだ費用が登録されていません</td></tr>';
+            return;
+        }
+        tbody.innerHTML = state.expenses.map(exp => `
+            <tr>
+                <td>${escapeHTML(exp.title)}</td>
+                <td>${escapeHTML(exp.payer)}</td>
+                <td>¥${exp.amount.toLocaleString()}</td>
+                <td>${exp.targets.map(t => escapeHTML(t)).join(', ')}</td>
+                <td><button class="btn btn-danger-subtle" onclick="removeExpense('${exp.id}')">削除</button></td>
+            </tr>
+        `).join('');
+    }
+
+    // 計算アルゴリズム（最小送金回数最適化）
+    function calculateRoute() {
+        if (state.members.length === 0) {
+            alert('メンバーが登録されていません。');
+            return;
+        }
+        if (state.expenses.length === 0) {
+            document.getElementById('resultContainer').innerHTML = '<div class="empty-state">費用が登録されていません</div>';
+            return;
+        }
+
+        // 1. 各メンバーの純収支 (Net Balance) を計算
+        // 収支 = 立て替えた総額 - 自分が負担すべき総額
+        const balances = {};
+        state.members.forEach(m => balances[m] = 0);
+
+        state.expenses.forEach(exp => {
+            balances[exp.payer] += exp.amount;
+            const share = exp.amount / exp.targets.length;
+            exp.targets.forEach(t => {
+                if (balances[t] !== undefined) {
+                    balances[t] -= share;
+                }
+            });
+        });
+
+        // 2. 債権者 (Creditor: プラス) と債務者 (Debtor: マイナス) に分ける
+        let creditors = [];
+        let debtors = [];
+
+        Object.keys(balances).forEach(name => {
+            // 浮動小数点誤差を考慮して丸める
+            let b = Math.round(balances[name]);
+            if (b > 0) {
+                creditors.push({ name, amount: b });
+            } else if (b < 0) {
+                debtors.push({ name, amount: -b }); // 正の値として保持
+            }
+        });
+
+        // 金額の大きい順にソート（効率的なマッチングのため）
+        creditors.sort((a, b) => b.amount - a.amount);
+        debtors.sort((a, b) => b.amount - a.amount);
+
+        // 3. 貪欲法によるマッチング（送金ルート生成）
+        let transfers = [];
+        let i = 0; // debtor index
+        let j = 0; // creditor index
+
+        while (i < debtors.length && j < creditors.length) {
+            let debtor = debtors[i];
+            let creditor = creditors[j];
+
+            let payAmount = Math.min(debtor.amount, creditor.amount);
+
+            if (payAmount > 0) {
+                transfers.push({
+                    from: debtor.name,
+                    to: creditor.name,
+                    amount: payAmount
+                });
+            }
+
+            debtor.amount -= payAmount;
+            creditor.amount -= payAmount;
+
+            if (debtor.amount === 0) i++;
+            if (creditor.amount === 0) j++;
+        }
+
+        // 4. 結果の描画
+        const resultContainer = document.getElementById('resultContainer');
+        if (transfers.length === 0) {
+            resultContainer.innerHTML = '<div class="empty-state" style="color:var(--success); font-weight:600;">精算の必要はありません（全員ぴったり帳尻が合っています）</div>';
+            return;
+        }
+
+        let html = '<div class="result-box">';
+        html += `<div style="font-size: 0.9rem; font-weight: 600; margin-bottom: 12px; color: var(--text-sub);">合計 ${transfers.length} 回の送金で精算できます</div>`;
+        
+        transfers.forEach(t => {
+            html += `
+                <div class="transfer-item">
+                    <div class="transfer-route">
+                        <span class="payer">${escapeHTML(t.from)}</span>
+                        <span class="arrow">➔</span>
+                        <span class="receiver">${escapeHTML(t.to)}</span>
+                    </div>
+                    <div class="amount">¥${t.amount.toLocaleString()}</div>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        resultContainer.innerHTML = html;
+    }
+
+    // XSS対策用エスケープ
+    function escapeHTML(str) {
+        return str.replace(/[&<>'"]/g, 
+            tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+        );
+    }
+</script>
+
+</body>
+</html>
